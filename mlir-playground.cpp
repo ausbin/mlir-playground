@@ -8,6 +8,8 @@
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
+#include "mlir/Dialect/SCF/IR/SCF.h"
+#include "mlir/Dialect/ControlFlow/IR/ControlFlow.h"
 #include "mlir/ExecutionEngine/ExecutionEngine.h"
 #include "mlir/ExecutionEngine/OptUtils.h"
 #include "mlir/IR/Builders.h"
@@ -24,6 +26,8 @@ void contextSetup(mlir::MLIRContext &ctx) {
     ctx.getOrLoadDialect<mlir::func::FuncDialect>();
     ctx.getOrLoadDialect<mlir::arith::ArithDialect>();
     ctx.getOrLoadDialect<mlir::LLVM::LLVMDialect>();
+    ctx.getOrLoadDialect<mlir::scf::SCFDialect>();
+	ctx.getOrLoadDialect<mlir::cf::ControlFlowDialect>();
     mlir::registerBuiltinDialectTranslation(ctx);
     mlir::registerLLVMDialectTranslation(ctx);
     llvm::InitializeNativeTarget();
@@ -53,10 +57,32 @@ void createExampleIR(mlir::ModuleOp module) {
     // Sets insert point to end of this block
     mlir::Block *entryBlock = builder.createBlock(
         &func.getBody(), {}, func_type.getInputs(), arg_locs);
-    mlir::Value sum =
-        builder.create<mlir::arith::AddIOp>(
-            loc, entryBlock->getArgument(0), entryBlock->getArgument(1));
-    builder.create<mlir::func::ReturnOp>(loc, sum);
+    //mlir::Value sum =
+    //    builder.create<mlir::arith::AddIOp>(
+    //       loc, entryBlock->getArgument(0), entryBlock->getArgument(1));
+
+    //Personal Implementation of a sample if statement
+    mlir::Value comparison = builder.create<mlir::arith::CmpIOp>(
+		loc, mlir::arith::CmpIPredicate::eq, entryBlock->getArgument(0), entryBlock->getArgument(1)
+    );
+
+
+	mlir::scf::IfOp ifStatement = builder.create<mlir::scf::IfOp>(loc, builder.getI32Type(), comparison, true);
+	mlir::Block* thenBlockPtr = ifStatement.thenBlock();
+	mlir::Block* elseBlockPtr = ifStatement.elseBlock();
+	
+	builder.setInsertionPointToStart(thenBlockPtr);
+	mlir::Value ifVal = builder.create<mlir::arith::AddIOp>(loc, entryBlock->getArgument(0), entryBlock->getArgument(1));
+	builder.create<mlir::scf::YieldOp>(loc, ifVal);
+
+	builder.setInsertionPointToStart(elseBlockPtr);
+    mlir::Value elseVal = builder.create<mlir::arith::SubIOp>(loc, entryBlock->getArgument(0), entryBlock->getArgument(1));
+	builder.create<mlir::scf::YieldOp>(loc, elseVal);
+	
+	// sets insert point to end of entryBlock
+	builder.setInsertionPointToEnd(entryBlock);
+
+    builder.create<mlir::func::ReturnOp>(loc, ifStatement.getResults());
 }
 
 // Converts the module in-place to the LLVM dialect of MLIR. (The LLVM dialect
