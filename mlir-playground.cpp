@@ -57,9 +57,9 @@ void createExampleIR(mlir::ModuleOp module) {
     // Sets insert point to end of this block
     mlir::Block *entryBlock = builder.createBlock(
         &func.getBody(), {}, func_type.getInputs(), arg_locs);
-    //mlir::Value sum =
-    //    builder.create<mlir::arith::AddIOp>(
-    //       loc, entryBlock->getArgument(0), entryBlock->getArgument(1));
+    mlir::Value sum =
+        builder.create<mlir::arith::AddIOp>(
+           loc, entryBlock->getArgument(0), entryBlock->getArgument(1));
 
     //Personal Implementation of a sample if statement
     mlir::Value comparison = builder.create<mlir::arith::CmpIOp>(
@@ -102,6 +102,7 @@ mlir::LogicalResult lowerToLLVMIR(mlir::ModuleOp module) {
     mlir::populateSCFToControlFlowConversionPatterns(patterns);
     mlir::cf::populateControlFlowToLLVMConversionPatterns(type_converter,
                                                           patterns);
+	
 
     return mlir::applyFullConversion(module, target, std::move(patterns));
 }
@@ -191,6 +192,17 @@ int main(int argc, char **argv) {
         llvm::errs() << "failed to lower to LLVM IR\n";
         return 1;
     }
+
+    llvm::errs() << "Canonicolize MLIR:\n"
+                 << "=============\n";
+    module->dump();
+
+    if (mlir::failed(lowerToLLVMIR(module))) {
+	
+        llvm::errs() << "failed to lower to LLVM IR\n";
+        return 1;
+    }
+
 
     llvm::errs() << "\nLLVM-dialect MLIR:\n"
                  << "==================\n";
