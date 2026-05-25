@@ -39,8 +39,7 @@ void createExampleIR(mlir::ModuleOp module) {
     mlir::Location loc = builder.getUnknownLoc();
     mlir::FunctionType func_type = builder.getFunctionType(
         {builder.getI32Type(), builder.getI32Type()}, builder.getI32Type());
-    mlir::func::FuncOp func = builder.create<mlir::func::FuncOp>(
-        loc, "calculate_sum", func_type);
+    mlir::func::FuncOp func = mlir::func::FuncOp::create(builder, loc, "calculate_sum", func_type);
     // This may be useful if you want to pass a memref into the function. (It
     // also seems to be useful for ExecutionEngine::invoke(); see the comment
     // below.) But none of that is helpful at the moment. See also:
@@ -53,10 +52,8 @@ void createExampleIR(mlir::ModuleOp module) {
     // Sets insert point to end of this block
     mlir::Block *entryBlock = builder.createBlock(
         &func.getBody(), {}, func_type.getInputs(), arg_locs);
-    mlir::Value sum =
-        builder.create<mlir::arith::AddIOp>(
-            loc, entryBlock->getArgument(0), entryBlock->getArgument(1));
-    builder.create<mlir::func::ReturnOp>(loc, sum);
+    mlir::Value sum = mlir::arith::AddIOp::create(builder, loc, entryBlock->getArgument(0), entryBlock->getArgument(1));
+    mlir::func::ReturnOp::create(builder, loc, sum);
 }
 
 // Converts the module in-place to the LLVM dialect of MLIR. (The LLVM dialect
@@ -92,7 +89,7 @@ mlir::FailureOr<RetType> invoke(mlir::ModuleOp module, std::string funcop_name,
     auto transformer = [](llvm::Module *llvm_module) -> llvm::Error {
         llvm::errs() << "\nLLVM IR:\n"
                      << "========\n";
-        llvm_module->dump();
+        llvm_module->print(llvm::errs(), nullptr);
         return llvm::Error::success();
     };
     mlir::ExecutionEngineOptions engine_options;

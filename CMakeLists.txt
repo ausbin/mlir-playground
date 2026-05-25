@@ -1,5 +1,5 @@
 # I'm pretty sure this is terrible CMake but I don't care too much
-
+cmake_minimum_required(VERSION 3.20)
 project(mlir-playground LANGUAGES C CXX)
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
@@ -40,4 +40,5 @@ set(more_mlir_libs MLIRExecutionEngine)
 set(all_libs ${llvm_libs} ${dialect_libs} ${more_mlir_libs})
 
 add_executable(mlir-playground mlir-playground.cpp)
+
 target_link_libraries(mlir-playground ${all_libs})
