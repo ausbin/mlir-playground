@@ -41,8 +41,4 @@ set(all_libs ${llvm_libs} ${dialect_libs} ${more_mlir_libs})
 
 add_executable(mlir-playground mlir-playground.cpp)
 
-if(APPLE)
-    target_link_libraries(mlir-playground PRIVATE MLIR LLVM MLIRExecutionEngine)
-else()
-    target_link_libraries(mlir-playground PRIVATE ${all_libs})
-endif()
+target_link_libraries(mlir-playground ${all_libs})
